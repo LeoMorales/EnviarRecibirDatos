@@ -143,34 +143,43 @@ public class WearActivity extends Activity
                     {
                         DataMapItem dataMapItem = DataMapItem.fromDataItem(
                             event.getDataItem());
-                        Asset imageAsset =
+                        final Asset imageAsset =
                             dataMapItem.getDataMap().
                                 getAsset("androidImage");
-                        imageBitmap = loadBitmapFromAsset(imageAsset);
-                        // Process our received image bitmap
-                        imageHandler.post(new Runnable() {
+                        Log.d(LOG_TAG, "Antes del loadBitmap");
+
+                        Thread thread = new Thread(new Runnable()
+                        {
                             @Override
-                            public void run() {
-                                if (imageView != null) {
-                                    Log.d(LOG_TAG, "Image received");
-                                    imageView.setImageBitmap(imageBitmap);
-                                }
-                            }
+                            public void run()
+                            {
+                                imageBitmap = loadBitmapFromAsset(imageAsset);
+                                // Process our received image bitmap
+                                imageHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (imageView != null) {
+                                            Log.d(LOG_TAG, "Image received");
+                                            imageView.setImageBitmap(imageBitmap);
+                                        }
+                                    }
+                                });
+                            }  // fin run
                         });
+
+                        // Starts our Thread
+                        thread.start();
+
                     }
                 }
             }  // fin onDataChanged...
         };
 
     public Bitmap loadBitmapFromAsset(Asset asset) {
+        Log.w("WearActivity", "loadBitmapFromAsset");
         if (asset == null) {
             throw new IllegalArgumentException("Asset cannot be empty");
         }
-//        ConnectionResult result =
-//                mGoogleApiClient.blockingConnect(1000, TimeUnit.MILLISECONDS);
-//        if (!result.isSuccess()) {
-//            return null;
-//        }
 
         // Convert asset into a file descriptor and block
         // until it's ready
@@ -179,24 +188,7 @@ public class WearActivity extends Activity
                 .await()
                 .getInputStream();
 
-//        1
-//        PendingResult<DataApi.GetFdForAssetResult> el_fd_del_asset = Wearable.DataApi.getFdForAsset(mGoogleApiClient,asset);
-//
-//        final DataApi.GetFdForAssetResult esperando_resultado = el_fd_del_asset.await();
-//        Log.w("WearActivity", "esperando el resultado.");
-//        InputStream assetInputStream = esperando_resultado.getInputStream();
-
-//        2
-//        InputStream assetInputStream =
-//                Wearable.DataApi.getFdForAsset(mGoogleApiClient,asset)
-//                    .setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
-//                        @Override
-//                        public void onResult(DataApi.DataItemResult dataItemResult) {
-//                            Log.d(LOG_TAG, "RECIBI ALGO " + dataItemResult.getStatus());
-//                            //callback.handleMessage(null);
-//                        }
-//                    });
-      if (assetInputStream == null) {
+        if (assetInputStream == null) {
             Log.w("WearActivity", "Requested an unknown Asset.");
             return null;
         }
