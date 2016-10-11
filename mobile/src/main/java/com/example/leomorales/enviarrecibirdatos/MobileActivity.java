@@ -36,6 +36,12 @@ public class MobileActivity extends AppCompatActivity {
         // Get a pointer to our buttons and textField
         final Button mSendMessageButton = (Button)
             findViewById(R.id.send_message_button);
+        /*
+         * mSendImageButton: responsible for downloading the image from the Internet
+         * and sending this to the Android wearable device.
+         */
+        final Button mSendImageButton = (Button)
+                findViewById(R.id.send_image_button);
         final EditText mSendMessageInput = (EditText)
             findViewById(R.id.send_message_input);
         // Set up our hint message for our Text Field
@@ -66,10 +72,12 @@ public class MobileActivity extends AppCompatActivity {
                                      * message payload, which is defined as a byte array.
                                      */
                                     MessageApi.SendMessageResult result = Wearable.MessageApi.
-                                            sendMessage(mGoogleApiClient,
-                                                    node.getId(), "/message",
-                                                    messageText.getBytes()).await();
+                                        sendMessage(mGoogleApiClient,
+                                            node.getId(), "/message",
+                                            messageText.getBytes()).await();
                                     // We use the await property to block our wearable UI until the task completes.
+
+                                    Log.d(LOG_TAG, "Message enviado: " + messageText);
                                 }
                                 runOnUiThread(new Runnable() {
                                     @Override
@@ -90,6 +98,61 @@ public class MobileActivity extends AppCompatActivity {
                 }
             });
 
+        // Set up our send image button onClick method handler
+        mSendImageButton.setOnClickListener(new
+            View.OnClickListener()
+            {
+                @Override
+                public void onClick(View v)
+                {
+                    // Create a new thread to send the downloaded image
+                    Thread thread = new Thread(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                        // Declare our image variable to hold the URL
+                            String imageName =
+                                "http://www.androidcentral.com/sites/androidcentral.com/files/styles/w550h500/public/wallpapers/batdroid-blj.jpg";
+                            Log.d(LOG_TAG, "VOY A ENVIAR UNA IMAGEN!");
+                            try {
+                                PutDataMapRequest request =
+                                    PutDataMapRequest.create("/image");
+                                Log.d(LOG_TAG, "CREAR EL REQUEST");
+                                DataMap map = request.getDataMap();
+                                URL url = new URL(imageName);
+                                Bitmap bmp =
+                                    BitmapFactory.decodeStream(url.openConnection().
+                                        getInputStream());
+                                Log.d(LOG_TAG, "CONEXION FINALIZADA");
+                                final ByteArrayOutputStream byteStream = new
+                                    ByteArrayOutputStream();
+                                bmp.compress(Bitmap.CompressFormat.PNG, 100,
+                                    byteStream);
+                                // Creates an image asset from the chosen image
+                                Asset asset =
+                                    Asset.createFromBytes(byteStream.toByteArray());
+                                // Assets are objects that are used to send binary blobs of data
+                                Random randomGenerator = new Random();
+                                int randomInt = randomGenerator.nextInt(1000);
+                                map.putInt("Integer", randomInt);
+                                map.putAsset("androidImage", asset);
+                                Log.d(LOG_TAG, "ANTES DE ENVIAR IMAGEN AL WATCH");
+                                Wearable.DataApi.putDataItem(mGoogleApiClient,
+                                    request.asPutDataRequest());
+                                Log.d(LOG_TAG, "DESPUES DE ENVIAR IMAGEN AL WATCH");
+                            }
+                            catch (Exception e) {
+                                Log.e(LOG_TAG, e.getMessage());
+                            }
+                        }  // fin run
+                    });
+                    // Starts our Thread
+                    thread.start();
+                    Log.d(LOG_TAG, "Image has been sent");
+                }
+            }
+        );
     }
     /*
     Declarar GoogleApiClient:
