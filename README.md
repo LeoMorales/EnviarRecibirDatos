@@ -1,2 +1,2 @@
 # EnviarRecibirDatos
-Start to toquetear Android Wear.
+Android Wear.
